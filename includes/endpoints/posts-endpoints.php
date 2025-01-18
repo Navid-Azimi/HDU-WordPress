@@ -62,3 +62,43 @@ add_action('rest_api_init', function () {
         ),
     ));
 });
+
+
+
+
+// Endpoint for a single blog post
+function get_single_blog_post($request) {
+    $slug = $request->get_param('slug');
+
+    // Query the post by slug
+    $post = get_page_by_path($slug, OBJECT, 'post');
+    if (!$post) {
+        return new WP_Error('not_found', 'Post not found', array('status' => 404));
+    }
+
+    // Prepare the response data
+    $data = array(
+        'title' => $post->post_title,
+        'content' => apply_filters('the_content', $post->post_content),
+        'featured_image' => get_the_post_thumbnail_url($post->ID, 'full') ?: null,
+    );
+
+    return rest_ensure_response($data);
+}
+
+// Register the single blog endpoint
+add_action('rest_api_init', function () {
+    register_rest_route('custom/v1', '/posts/single', array(
+        'methods' => 'GET',
+        'callback' => 'get_single_blog_post',
+        'args' => array(
+            'slug' => array(
+                'required' => true,
+                'validate_callback' => function ($param) {
+                    return is_string($param);
+                },
+            ),
+        ),
+    ));
+});
+
